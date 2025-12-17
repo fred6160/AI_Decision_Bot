@@ -102,7 +102,7 @@ class DecisionBot:
         results = self.calculate_weighted_scores(user_id)
         data = self.user_data[user_id]
 
-        recommendation = f"🎯 **DECISION ANALYSIS COMPLETE**\n\n"
+        recommendation = f"🎯 DECISION ANALYSIS COMPLETE\n\n"
         recommendation += f"📋 Decision: {data['decision_type']}\n"
         recommendation += f"📊 Options Analyzed: {len(data['options'])}\n"
         recommendation += f"⚖️ Criteria Used: {len(data['criteria'])}\n\n"
@@ -110,7 +110,7 @@ class DecisionBot:
         recommendation += "═" * 40 + "\n\n"
 
         # Ranking
-        recommendation += "🏆 **RANKING**\n\n"
+        recommendation += "🏆 RANKING\n\n"
         for i, result in enumerate(results, 1):
             medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
             recommendation += f"{medal} **{result['option']}** - Score: {result['total_score']}/10\n"
@@ -119,7 +119,7 @@ class DecisionBot:
 
         # Best option analysis
         best = results[0]
-        recommendation += f"✅ **RECOMMENDATION: {best['option']}**\n\n"
+        recommendation += f"✅ RECOMMENDATION: {best['option']}\n\n"
         recommendation += "**Why this is the best choice:**\n\n"
 
         # Show breakdown
@@ -132,7 +132,7 @@ class DecisionBot:
 
         # Comparative analysis
         if len(results) > 1:
-            recommendation += f"\n**Comparison with other options:**\n\n"
+            recommendation += f"\nComparison with other options:\n\n"
             second = results[1]
             diff = best["total_score"] - second["total_score"]
             recommendation += (
@@ -148,7 +148,7 @@ class DecisionBot:
 
         # Key insights
         recommendation += "\n" + "═" * 40 + "\n\n"
-        recommendation += "💡 **KEY INSIGHTS**\n\n"
+        recommendation += "💡 KEY INSIGHTS\n\n"
 
         # Find user's priorities
         top_priority = max(data["criteria"], key=lambda x: x["weight"])
@@ -163,7 +163,7 @@ class DecisionBot:
                 )
 
         recommendation += "\n" + "═" * 40 + "\n\n"
-        recommendation += "📈 **DETAILED BREAKDOWN**\n\n"
+        recommendation += "📈 DETAILED BREAKDOWN\n\n"
 
         # Show all options with details
         for result in results:
