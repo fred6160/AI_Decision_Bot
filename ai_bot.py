@@ -113,14 +113,14 @@ class DecisionBot:
         recommendation += "🏆 RANKING\n\n"
         for i, result in enumerate(results, 1):
             medal = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}."
-            recommendation += f"{medal} **{result['option']}** - Score: {result['total_score']}/10\n"
+            recommendation += f"{medal} {result['option']} - Score: {result['total_score']}/10\n"
 
         recommendation += "\n" + "═" * 40 + "\n\n"
 
         # Best option analysis
         best = results[0]
         recommendation += f"✅ RECOMMENDATION: {best['option']}\n\n"
-        recommendation += "**Why this is the best choice:**\n\n"
+        recommendation += "Why this is the best choice:\n\n"
 
         # Show breakdown
         for detail in best["details"]:
@@ -167,7 +167,7 @@ class DecisionBot:
 
         # Show all options with details
         for result in results:
-            recommendation += f"**{result['option']}** ({result['total_score']}/10):\n"
+            recommendation += f"{result['option']} ({result['total_score']}/10):\n"
             for detail in result["details"]:
                 recommendation += f"  • {detail['criterion']}: {detail['score']}/10\n"
             recommendation += "\n"
