@@ -797,10 +797,15 @@ async def option_scores(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         )
         return OPTION_SCORES
 
-    # Save score
+    # Get current indices
     opt_idx = bot.user_data[user_id]["current_score_option"]
     crit_idx = bot.user_data[user_id]["current_score_criterion"]
+    
+    # Get option and criterion names BEFORE any state changes
+    current_option_name = bot.user_data[user_id]["options"][opt_idx]["name"]
     criterion_name = bot.user_data[user_id]["criteria"][crit_idx]["name"]
+    
+    # Save score
     bot.user_data[user_id]["options"][opt_idx]["scores"][criterion_name] = score
 
     # Calculate progress
@@ -810,34 +815,47 @@ async def option_scores(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     current_score_number = (opt_idx * num_criteria) + crit_idx + 1
     progress_pct = int((current_score_number / total_scores) * 100)
 
+    # Determine next state
     if crit_idx + 1 < num_criteria:
-        # More criteria for this option
-        bot.user_data[user_id]["current_score_criterion"] += 1
-        option_name = bot.user_data[user_id]["options"][opt_idx]["name"]
-        next_criterion = bot.user_data[user_id]["criteria"][crit_idx + 1]["name"]
-
+        # More criteria for this option - update state BEFORE sending message
+        next_crit_idx = crit_idx + 1
+        next_criterion_name = bot.user_data[user_id]["criteria"][next_crit_idx]["name"]
+        
+        # Update state
+        bot.user_data[user_id]["current_score_criterion"] = next_crit_idx
+        
+        # Send message
         await update.message.reply_text(
             f"✅ Score saved! [{progress_pct}% complete]\n\n"
-            f"For '{option_name}',\n"
-            f"How would you rate '{next_criterion}'?\n"
+            f"For '{current_option_name}',\n"
+            f"How would you rate '{next_criterion_name}'?\n"
             f"Enter a number from 1 to 10:"
         )
         return OPTION_SCORES
+        
     elif opt_idx + 1 < num_options:
-        # Move to next option
-        bot.user_data[user_id]["current_score_option"] += 1
+        # More options - update state BEFORE sending message
+        next_opt_idx = opt_idx + 1
+        next_option_name = bot.user_data[user_id]["options"][next_opt_idx]["name"]
+        first_criterion_name = bot.user_data[user_id]["criteria"][0]["name"]
+        
+        # Update state
+        bot.user_data[user_id]["current_score_option"] = next_opt_idx
         bot.user_data[user_id]["current_score_criterion"] = 0
-        next_option = bot.user_data[user_id]["options"][opt_idx + 1]["name"]
-        first_criterion = bot.user_data[user_id]["criteria"][0]["name"]
-
+        
+        # Send message with updated indices for proper progress calculation
+        next_score_number = (next_opt_idx * num_criteria) + 0 + 1
+        next_progress_pct = int((next_score_number / total_scores) * 100)
+        
         await update.message.reply_text(
-            f"✅ All scores saved for {option_name}! [{progress_pct}% complete]\n\n"
+            f"✅ All scores saved for {current_option_name}! [{progress_pct}% complete]\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"For '{next_option}',\n"
-            f"How would you rate '{first_criterion}'?\n"
+            f"For '{next_option_name}',\n"
+            f"How would you rate '{first_criterion_name}'?\n"
             f"Enter a number from 1 to 10:"
         )
         return OPTION_SCORES
+        
     else:
         # All scores collected - generate recommendation
         await update.message.reply_text(
