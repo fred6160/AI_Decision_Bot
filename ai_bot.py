@@ -918,6 +918,54 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return ConversationHandler.END
 
 
+async def standalone_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Standalone start handler that works outside conversation handler"""
+    try:
+        user_id = update.effective_user.id
+        logger.info(f"Standalone start command received from user {user_id}")
+        
+        # Clear any existing conversation state
+        if user_id in bot.user_data:
+            del bot.user_data[user_id]
+        
+        # Initialize fresh user data
+        bot.user_data[user_id] = {
+            "started": datetime.now().isoformat(),
+            "criteria": [],
+            "options": [],
+            "decision_type": None,
+        }
+        
+        await update.message.reply_text(
+            "👋 Welcome to the AI Decision Recommendation Bot!\n\n"
+            "I help students make better decisions using structured, weighted analysis.\n\n"
+            "✅ Perfect for:\n"
+            "• Choosing a course or major\n"
+            "• Selecting a final year project topic\n"
+            "• Deciding between internships\n"
+            "• Choosing a university or postgraduate program\n"
+            "• Study vs work decisions\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "🎯 Let's begin! Please describe your decision in detail:\n\n"
+            "Example: 'Choosing between three final year project topics in AI and machine learning'"
+        )
+        logger.info(f"Standalone start message sent to user {user_id}")
+        
+        # Store state in context so conversation handler can pick it up
+        # The next message will be handled by the conversation handler's DECISION_TYPE state
+        # We need to manually trigger the conversation by storing the expected state
+        context.user_data['conversation_state'] = DECISION_TYPE
+        
+    except Exception as e:
+        logger.error(f"Error in standalone_start handler: {e}", exc_info=True)
+        try:
+            await update.message.reply_text(
+                "❌ An error occurred. Please try again with /start"
+            )
+        except Exception:
+            pass
+
+
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send help and usage information"""
     help_text = (
@@ -997,12 +1045,17 @@ def main() -> None:
             CommandHandler("cancel", cancel),
             CommandHandler("restart", restart),
             CommandHandler("help", help_command),
+            CommandHandler("start", start),  # Allow /start to restart conversation from any state
         ],
+        per_chat=True,
+        per_user=True,
+        per_message=False,
     )
 
-    # Add handlers - conversation handler first (it handles /start via entry_points)
+    # Add conversation handler first - it handles /start via entry_points and fallbacks
     application.add_handler(conv_handler)
     logger.info("Conversation handler added")
+    
     # Add help handler separately so it works outside conversations
     application.add_handler(CommandHandler("help", help_command))
     logger.info("Help handler added")
