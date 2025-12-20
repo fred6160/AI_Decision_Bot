@@ -992,7 +992,7 @@ def main() -> None:
 
     application.add_handler(conv_handler)
     application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("start", start))
+    # Do NOT add start handler here - it's already in the conversation handler's entry_points
 
     # Run the bot
     print("✅ Bot is starting...")
