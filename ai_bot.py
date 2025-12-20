@@ -476,30 +476,39 @@ validator = DecisionValidator()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Start the conversation and initialize user session"""
-    user_id = update.effective_user.id
+    try:
+        user_id = update.effective_user.id
+        logger.info(f"Start command received from user {user_id}")
 
-    # Initialize fresh user data
-    bot.user_data[user_id] = {
-        "started": datetime.now().isoformat(),
-        "criteria": [],
-        "options": [],
-        "decision_type": None,
-    }
+        # Initialize fresh user data
+        bot.user_data[user_id] = {
+            "started": datetime.now().isoformat(),
+            "criteria": [],
+            "options": [],
+            "decision_type": None,
+        }
 
-    await update.message.reply_text(
-        "👋 Welcome to the AI Decision Recommendation Bot!\n\n"
-        "I help students make better decisions using structured, weighted analysis.\n\n"
-        "✅ Perfect for:\n"
-        "• Choosing a course or major\n"
-        "• Selecting a final year project topic\n"
-        "• Deciding between internships\n"
-        "• Choosing a university or postgraduate program\n"
-        "• Study vs work decisions\n\n"
-        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-        "🎯 Let's begin! Please describe your decision in detail:\n\n"
-        "Example: 'Choosing between three final year project topics in AI and machine learning'"
-    )
-    return DECISION_TYPE
+        await update.message.reply_text(
+            "👋 Welcome to the AI Decision Recommendation Bot!\n\n"
+            "I help students make better decisions using structured, weighted analysis.\n\n"
+            "✅ Perfect for:\n"
+            "• Choosing a course or major\n"
+            "• Selecting a final year project topic\n"
+            "• Deciding between internships\n"
+            "• Choosing a university or postgraduate program\n"
+            "• Study vs work decisions\n\n"
+            "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            "🎯 Let's begin! Please describe your decision in detail:\n\n"
+            "Example: 'Choosing between three final year project topics in AI and machine learning'"
+        )
+        logger.info(f"Start message sent to user {user_id}, returning DECISION_TYPE state")
+        return DECISION_TYPE
+    except Exception as e:
+        logger.error(f"Error in start handler: {e}", exc_info=True)
+        await update.message.reply_text(
+            "❌ An error occurred. Please try again with /start"
+        )
+        return ConversationHandler.END
 
 
 async def decision_type(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -969,6 +978,7 @@ def main() -> None:
 
     # Create application
     application = Application.builder().token(TOKEN).build()
+    logger.info("Application created successfully")
 
     # Add conversation handler
     conv_handler = ConversationHandler(
@@ -990,11 +1000,30 @@ def main() -> None:
         ],
     )
 
+    # Add handlers - conversation handler first (it handles /start via entry_points)
     application.add_handler(conv_handler)
+    logger.info("Conversation handler added")
+    # Add help handler separately so it works outside conversations
     application.add_handler(CommandHandler("help", help_command))
-    # Do NOT add start handler here - it's already in the conversation handler's entry_points
+    logger.info("Help handler added")
+
+    # Add error handler
+    async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Log the error and send a message to the user"""
+        logger.error(f"Exception while handling an update: {context.error}", exc_info=context.error)
+        if update and isinstance(update, Update) and update.effective_message:
+            try:
+                await update.effective_message.reply_text(
+                    "❌ Sorry, an error occurred. Please try /start to begin again."
+                )
+            except Exception:
+                pass  # Ignore errors in error handler
+    
+    application.add_error_handler(error_handler)
+    logger.info("Error handler added")
 
     # Run the bot
+    logger.info("Starting bot polling...")
     print("✅ Bot is starting...")
     print("📱 Press Ctrl+C to stop")
     application.run_polling(allowed_updates=[
